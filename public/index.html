@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blind Chess Prototype</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --tile-light: #ebecd0;
+            --tile-dark: #779556;
+            --tile-size: 70px;
+            --ui-panel: #1e1e1e;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* The Chessboard Grid */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, var(--tile-size));
+            grid-template-rows: repeat(8, var(--tile-size));
+            border: 4px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            user-select: none;
+        }
+
+        /* Individual Tiles */
+        .tile {
+            width: var(--tile-size);
+            height: var(--tile-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .tile.light { background-color: var(--tile-light); }
+        .tile.dark { background-color: var(--tile-dark); }
+
+        /* Piece Styling */
+        .piece {
+            width: 90%;
+            height: 90%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 2;
+            pointer-events: none; /* Let clicks pass through to the tile */
+        }
+
+        /* UI Elements */
+        .status-panel {
+            background: var(--ui-panel);
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 300px;
+            border: 1px solid #333;
+        }
+
+        .status-panel h2 { margin: 0 0 10px 0; font-size: 1.2rem; color: #ffca28; }
+
+        .log {
+            width: calc(var(--tile-size) * 8);
+            height: 120px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 13px;
+            overflow-y: auto;
+            color: #aaa;
+        }
+
+        /* Selection/Highlighting */
+        .tile.selected { outline: 4px solid rgba(255, 255, 255, 0.7) inset; }
+        .tile.revealed { background-color: #f1c40f !important; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="status-panel">
+            <h2 id="phase-display">WHITE: LOCK A PIECE</h2>
+            <div id="turn-display">Player: White</div>
+        </div>
+
+        <div id="board">
+            </div>
+
+        <div class="log" id="game-log">
+            <div>> System: Board initialized. Waiting for White...</div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
