@@ -1,118 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blind Chess Prototype</title>
+    <title>Blind Chess: Elite Edition</title>
     <style>
-        :root {
-            --bg-dark: #121212;
-            --tile-light: #ebecd0;
-            --tile-dark: #779556;
-            --tile-size: 70px;
-            --ui-panel: #1e1e1e;
+        :root { --tile: 75px; --bg: #0f172a; }
+        body { background: var(--bg); color: #94a3b8; font-family: 'Inter', system-ui; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; overflow: hidden; }
+        
+        #board { display: grid; grid-template-columns: repeat(8, var(--tile)); grid-template-rows: repeat(8, var(--tile)); border: 1px solid #334155; position: relative; }
+        
+        .tile { width: var(--tile); height: var(--tile); display: flex; align-items: center; justify-content: center; opacity: 0.2; transition: all 0.4s ease; position: relative; }
+        .tile.light { background: #cbd5e1; }
+        .tile.dark { background: #64748b; }
+        
+        /* State Highlights */
+        .tile.visible, .tile.revealed, .tile.selected { opacity: 1; filter: saturate(1); }
+        .tile.selected { box-shadow: inset 0 0 0 4px #fbbf24; z-index: 2; }
+        
+        /* Movement Dots for Empty Squares */
+        .tile.valid-move::after { content: ''; width: 15px; height: 15px; background: rgba(14, 165, 233, 0.5); border-radius: 50%; pointer-events: none; }
+        .tile.valid-move.has-enemy::after { width: 100%; height: 100%; border-radius: 0; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; }
+
+        .piece { width: 85%; height: 85%; background-size: contain; background-repeat: no-repeat; pointer-events: none; z-index: 3; }
+        
+        .ui { margin-bottom: 20px; text-align: center; }
+        #status { font-weight: 800; letter-spacing: 2px; color: #f8fafc; text-transform: uppercase; }
+
+        /* Turn Indicator Animation */
+        #turn-flash {
+            position: fixed; top: 50%; left: 50%; transform: translate(-300%, -50%);
+            font-size: 5rem; font-weight: 900; color: white; pointer-events: none;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5); opacity: 0; z-index: 99;
         }
-
-        body {
-            margin: 0;
-            background-color: var(--bg-dark);
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+        .flash-anim { animation: flashMove 1.2s ease-in-out; }
+        @keyframes flashMove {
+            0% { transform: translate(-200%, -50%); opacity: 0; }
+            50% { transform: translate(-50%, -50%); opacity: 1; }
+            100% { transform: translate(100%, -50%); opacity: 0; }
         }
-
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        /* The Chessboard Grid */
-        #board {
-            display: grid;
-            grid-template-columns: repeat(8, var(--tile-size));
-            grid-template-rows: repeat(8, var(--tile-size));
-            border: 4px solid #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            user-select: none;
-        }
-
-        /* Individual Tiles */
-        .tile {
-            width: var(--tile-size);
-            height: var(--tile-size);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .tile.light { background-color: var(--tile-light); }
-        .tile.dark { background-color: var(--tile-dark); }
-
-        /* Piece Styling */
-        .piece {
-            width: 90%;
-            height: 90%;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            z-index: 2;
-            pointer-events: none; /* Let clicks pass through to the tile */
-        }
-
-        /* UI Elements */
-        .status-panel {
-            background: var(--ui-panel);
-            padding: 15px 30px;
-            border-radius: 8px;
-            text-align: center;
-            min-width: 300px;
-            border: 1px solid #333;
-        }
-
-        .status-panel h2 { margin: 0 0 10px 0; font-size: 1.2rem; color: #ffca28; }
-
-        .log {
-            width: calc(var(--tile-size) * 8);
-            height: 120px;
-            background: #000;
-            border: 1px solid #333;
-            border-radius: 4px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 13px;
-            overflow-y: auto;
-            color: #aaa;
-        }
-
-        /* Selection/Highlighting */
-        .tile.selected { outline: 4px solid rgba(255, 255, 255, 0.7) inset; }
-        .tile.revealed { background-color: #f1c40f !important; }
     </style>
 </head>
 <body>
-
-    <div class="game-container">
-        <div class="status-panel">
-            <h2 id="phase-display">WHITE: LOCK A PIECE</h2>
-            <div id="turn-display">Player: White</div>
-        </div>
-
-        <div id="board">
-            </div>
-
-        <div class="log" id="game-log">
-            <div>> System: Board initialized. Waiting for White...</div>
-        </div>
-    </div>
-
-    <script type="module" src="app.js"></script>
+    <div id="turn-flash">WHITE'S TURN</div>
+    <div class="ui"><div id="status">WHITE: LOCK</div></div>
+    <div id="board"></div>
+    <script src="app.js"></script>
 </body>
 </html>
