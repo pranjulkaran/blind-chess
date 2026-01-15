@@ -1,25 +1,68 @@
-/* This forces the board and pieces to show up using external images */
-.cg-wrap {
-    background-image: url('https://lichess1.org/assets/images/board/svg/brown.svg');
-    background-size: cover;
+:root {
+    --tile: 65px;
+    --bg-dark: #262421;
+    --sidebar-bg: #1f1e1b;
+    --border: #312e2b;
+    --white-theme: #81b64c;
+    --black-theme: #fa4141;
+    --yellow: #facc15;
+    --red: #ef4444;
 }
 
-piece.pawn.white { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg'); }
-piece.rook.white { background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg'); }
-piece.knight.white { background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg'); }
-piece.bishop.white { background-image: url('https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg'); }
-piece.queen.white { background-image: url('https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg'); }
-piece.king.white { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg'); }
-
-piece.pawn.black { background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg'); }
-piece.rook.black { background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg'); }
-piece.knight.black { background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg'); }
-piece.bishop.black { background-image: url('https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg'); }
-piece.queen.black { background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg'); }
-piece.king.black { background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'); }
-
-piece {
-    background-size: cover;
-    width: 100%;
-    height: 100%;
+body {
+    background-color: var(--bg-dark);
+    color: #bababa;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    padding-top: 50px;
 }
+
+#main-layout { display: flex; gap: 20px; }
+
+/* Board Geometry */
+#board-wrapper { position: relative; padding: 25px; background: var(--sidebar-bg); border-radius: 4px; }
+#board { display: grid; grid-template-columns: repeat(8, var(--tile)); grid-template-rows: repeat(8, var(--tile)); border: 2px solid #000; }
+
+.tile { width: var(--tile); height: var(--tile); display: flex; align-items: center; justify-content: center; opacity: 0.1; transition: opacity 0.2s; position: relative; }
+.tile.light { background: #ebecd0; }
+.tile.dark { background: #779556; }
+
+/* Tactical States */
+.tile.visible, .tile.revealed, .tile.selected { opacity: 1; }
+.tile.selected { box-shadow: inset 0 0 0 4px var(--yellow); }
+
+/* Valid Move: Yellow Dot */
+.tile.valid-move::after { content: ''; width: 14px; height: 14px; background: var(--yellow); border-radius: 50%; box-shadow: 0 0 8px var(--yellow); }
+
+/* Capture Reveal: Solid Red Tile */
+.tile.valid-move.has-piece { background-color: var(--red) !important; opacity: 1; animation: pulse 1s infinite; }
+.tile.valid-move.has-piece::after { background: white; width: 18px; height: 18px; }
+
+@keyframes pulse { 50% { filter: brightness(1.2); } }
+
+.piece { width: 90%; height: 90%; background-size: contain; background-repeat: no-repeat; z-index: 5; }
+
+/* Coordinates */
+.ranks, .files { position: absolute; color: #7d7a77; font-size: 0.75rem; font-weight: bold; }
+.ranks { left: 8px; top: 25px; height: calc(var(--tile) * 8); display: flex; flex-direction: column; justify-content: space-around; }
+.files { bottom: 4px; left: 25px; width: calc(var(--tile) * 8); display: flex; justify-content: space-around; }
+
+/* Sidebar History */
+#sidebar { width: 300px; background: var(--sidebar-bg); border-radius: 4px; display: flex; flex-direction: column; }
+#notation-grid { display: grid; grid-template-columns: 40px 1fr 1fr; font-size: 0.9rem; max-height: 500px; overflow-y: auto; }
+.grid-header { padding: 10px; color: #7d7a77; border-bottom: 1px solid var(--border); font-weight: bold; }
+.move-num { padding: 10px; background: #2b2925; color: #7d7a77; text-align: center; border-bottom: 1px solid var(--border); }
+.move-cell { padding: 10px; border-bottom: 1px solid var(--border); color: #fff; }
+
+/* Privacy Logic */
+.private { display: none; }
+.mask { color: #555; font-style: italic; }
+
+body[data-turn="white"] .white-private { display: inline; }
+body[data-turn="white"] .white-mask { display: none; }
+body[data-turn="black"] .black-private { display: inline; }
+body[data-turn="black"] .black-mask { display: none; }
+
+#reset-btn { margin: 15px; padding: 12px; background: #312e2b; color: white; border: none; cursor: pointer; border-radius: 4px; }

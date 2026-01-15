@@ -1,49 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Blind Chess: Elite Edition</title>
-    <style>
-        :root { --tile: 75px; --bg: #0f172a; }
-        body { background: var(--bg); color: #94a3b8; font-family: 'Inter', system-ui; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; overflow: hidden; }
-        
-        #board { display: grid; grid-template-columns: repeat(8, var(--tile)); grid-template-rows: repeat(8, var(--tile)); border: 1px solid #334155; position: relative; }
-        
-        .tile { width: var(--tile); height: var(--tile); display: flex; align-items: center; justify-content: center; opacity: 0.2; transition: all 0.4s ease; position: relative; }
-        .tile.light { background: #cbd5e1; }
-        .tile.dark { background: #64748b; }
-        
-        /* State Highlights */
-        .tile.visible, .tile.revealed, .tile.selected { opacity: 1; filter: saturate(1); }
-        .tile.selected { box-shadow: inset 0 0 0 4px #fbbf24; z-index: 2; }
-        
-        /* Movement Dots for Empty Squares */
-        .tile.valid-move::after { content: ''; width: 15px; height: 15px; background: rgba(14, 165, 233, 0.5); border-radius: 50%; pointer-events: none; }
-        .tile.valid-move.has-enemy::after { width: 100%; height: 100%; border-radius: 0; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; }
-
-        .piece { width: 85%; height: 85%; background-size: contain; background-repeat: no-repeat; pointer-events: none; z-index: 3; }
-        
-        .ui { margin-bottom: 20px; text-align: center; }
-        #status { font-weight: 800; letter-spacing: 2px; color: #f8fafc; text-transform: uppercase; }
-
-        /* Turn Indicator Animation */
-        #turn-flash {
-            position: fixed; top: 50%; left: 50%; transform: translate(-300%, -50%);
-            font-size: 5rem; font-weight: 900; color: white; pointer-events: none;
-            text-shadow: 0 0 20px rgba(0,0,0,0.5); opacity: 0; z-index: 99;
-        }
-        .flash-anim { animation: flashMove 1.2s ease-in-out; }
-        @keyframes flashMove {
-            0% { transform: translate(-200%, -50%); opacity: 0; }
-            50% { transform: translate(-50%, -50%); opacity: 1; }
-            100% { transform: translate(100%, -50%); opacity: 0; }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Stealth Chess</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div id="turn-flash">WHITE'S TURN</div>
-    <div class="ui"><div id="status">WHITE: LOCK</div></div>
-    <div id="board"></div>
+<body data-turn="white">
+
+    <div id="main-layout">
+        <div id="game-container">
+            <div id="status-bar">
+                <span id="turn-indicator">WHITE'S TURN</span>
+                <span id="phase-indicator">PHASE: LOCK</span>
+            </div>
+            
+            <div id="board-wrapper">
+                <div class="ranks"><div>8</div><div>7</div><div>6</div><div>5</div><div>4</div><div>3</div><div>2</div><div>1</div></div>
+                <div id="board"></div>
+                <div class="files"><div>a</div><div>b</div><div>c</div><div>d</div><div>e</div><div>f</div><div>g</div><div>h</div></div>
+            </div>
+        </div>
+
+        <div id="sidebar">
+            <div id="move-history">
+                <div class="history-header">Move History</div>
+                <div id="notation-grid">
+                    <div class="grid-header">#</div>
+                    <div class="grid-header">White</div>
+                    <div class="grid-header">Black</div>
+                    </div>
+            </div>
+            <button id="reset-btn" onclick="location.reload()">New Game</button>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>

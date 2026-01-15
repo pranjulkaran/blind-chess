@@ -1,10 +1,13 @@
 const boardEl = document.getElementById('board');
-const statusEl = document.getElementById('status');
-const flashEl = document.getElementById('turn-flash');
+const notationGrid = document.getElementById('notation-grid');
+const turnText = document.getElementById('turn-indicator');
+const phaseText = document.getElementById('phase-indicator');
 
 let turn = 'white';
 let phase = 'LOCK'; 
 let selectedTile = null;
+let revealedSquares = new Set();
+let moveCount = 1;
 
 let pieces = {
     "0,0":{type:'rook',color:'black'}, "1,0":{type:'knight',color:'black'}, "2,0":{type:'bishop',color:'black'}, "3,0":{type:'queen',color:'black'}, "4,0":{type:'king',color:'black'}, "5,0":{type:'bishop',color:'black'}, "6,0":{type:'knight',color:'black'}, "7,0":{type:'rook',color:'black'},
@@ -24,43 +27,36 @@ function init() {
             boardEl.appendChild(t);
         }
     }
-    triggerFlash();
     render();
 }
 
 function render() {
     document.querySelectorAll('.piece').forEach(p => p.remove());
-    document.querySelectorAll('.tile').forEach(t => t.classList.remove('visible', 'selected', 'revealed', 'valid-move', 'has-enemy'));
+    document.querySelectorAll('.tile').forEach(t => t.classList.remove('visible', 'selected', 'revealed', 'valid-move', 'has-piece'));
+
+    let playable = selectedTile ? getValidMoves(selectedTile) : [];
 
     for (const [coord, p] of Object.entries(pieces)) {
-        const [x, y] = coord.split(',').map(Number);
-        const tile = document.getElementById(`tile-${x}-${y}`);
+        const tile = document.getElementById(`tile-${coord.replace(',','-')}`);
         const isOwn = p.color === turn;
-        const isSeen = selectedTile && canSee(selectedTile, coord) && p.color !== turn;
+        const isRevealed = p.color !== turn && revealedSquares.has(coord);
 
-        if (isOwn) tile.classList.add('visible');
-        if (isOwn || isSeen) {
+        if (isOwn || isRevealed) {
+            tile.classList.add(isOwn ? 'visible' : 'revealed');
             const el = document.createElement('div');
             el.className = 'piece';
             el.style.backgroundImage = `url(https://upload.wikimedia.org/wikipedia/commons/${getImg(p)})`;
             tile.appendChild(el);
-            if (isSeen) tile.classList.add('revealed');
         }
     }
 
     if (selectedTile) {
-        document.getElementById(`tile-${selectedTile}`).classList.add('selected');
-        // ALWAYS SHOW ALL VALID MOVES IN COLOR
-        for (let y = 0; y < 8; y++) {
-            for (let x = 0; x < 8; x++) {
-                const target = `${x},${y}`;
-                if (isValidMove(pieces[selectedTile], selectedTile, target)) {
-                    const tEl = document.getElementById(`tile-${target}`);
-                    tEl.classList.add('valid-move');
-                    if (pieces[target]) tEl.classList.add('has-enemy');
-                }
-            }
-        }
+        document.getElementById(`tile-${selectedTile.replace(',','-')}`).classList.add('selected');
+        playable.forEach(m => {
+            const t = document.getElementById(`tile-${m.replace(',','-')}`);
+            t.classList.add('valid-move');
+            if (pieces[m] && pieces[m].color !== turn) t.classList.add('has-piece');
+        });
     }
 }
 
@@ -68,94 +64,147 @@ function handleClick(x, y) {
     const coord = `${x},${y}`;
     if (phase === 'LOCK') {
         if (pieces[coord]?.color === turn) {
-            // Check if piece can even move
             const moves = getValidMoves(coord);
-            if (moves.length === 0) {
-                statusEl.innerText = "NO MOVES! CHOOSE ANOTHER";
-                return;
-            }
-            selectedTile = coord; phase = 'MOVE';
-            statusEl.innerText = `${turn} to move`;
-            render();
+            if (moves.length === 0) return;
+            selectedTile = coord;
+            phase = 'MOVE';
+            revealedSquares = new Set(getAttackSquares(coord));
         }
     } else {
         const active = pieces[selectedTile];
         if (isValidMove(active, selectedTile, coord)) {
-            if (pieces[coord]?.type === 'king') { alert(turn.toUpperCase() + " WINS!"); location.reload(); }
+            const cap = pieces[coord] ? pieces[coord].type : null;
+            if (cap === 'king') { alert(turn.toUpperCase() + " WINS!"); location.reload(); }
+            
+            updateNotationGrid(active, selectedTile, coord, cap);
+            
             pieces[coord] = active;
             delete pieces[selectedTile];
-            nextTurn();
+            
+            turn = turn === 'white' ? 'black' : 'white';
+            document.body.setAttribute('data-turn', turn);
+            phase = 'LOCK'; selectedTile = null;
+            revealedSquares.clear();
         } else if (pieces[coord]?.color === turn) {
-            // Re-select logic
-            const moves = getValidMoves(coord);
-            if (moves.length > 0) { selectedTile = coord; render(); }
+            selectedTile = coord;
+            revealedSquares = new Set(getAttackSquares(coord));
         }
     }
-}
-
-function getValidMoves(coord) {
-    const moves = [];
-    for (let y = 0; y < 8; y++) {
-        for (let x = 0; x < 8; x++) {
-            if (isValidMove(pieces[coord], coord, `${x},${y}`)) moves.push(`${x},${y}`);
-        }
-    }
-    return moves;
-}
-
-function nextTurn() {
-    turn = turn === 'white' ? 'black' : 'white';
-    phase = 'LOCK';
-    selectedTile = null;
-    statusEl.innerText = `${turn}: LOCK`;
-    triggerFlash();
+    turnText.innerText = `${turn.toUpperCase()}'S TURN`;
+    phaseText.innerText = `PHASE: ${phase}`;
     render();
 }
 
-function triggerFlash() {
-    flashEl.innerText = `${turn.toUpperCase()}'S TURN`;
-    flashEl.classList.remove('flash-anim');
-    void flashEl.offsetWidth; // Trigger reflow
-    flashEl.classList.add('flash-anim');
+function updateNotationGrid(p, from, to, cap) {
+    const notation = `${toAlgebraic(from)}→${toAlgebraic(to)}${cap ? 'x' : ''}`;
+    
+    if (turn === 'white') {
+        const num = document.createElement('div');
+        num.className = 'move-num';
+        num.innerText = moveCount;
+        const whiteCell = document.createElement('div');
+        whiteCell.className = 'move-cell';
+        whiteCell.innerHTML = `<span class="white-private">${notation}</span><span class="white-mask mask">Moved</span>`;
+        const blackCell = document.createElement('div');
+        blackCell.id = `black-move-${moveCount}`;
+        blackCell.className = 'move-cell';
+        notationGrid.appendChild(num);
+        notationGrid.appendChild(whiteCell);
+        notationGrid.appendChild(blackCell);
+    } else {
+        const blackCell = document.getElementById(`black-move-${moveCount}`);
+        blackCell.innerHTML = `<span class="black-private">${notation}</span><span class="black-mask mask">Moved</span>`;
+        moveCount++;
+    }
 }
 
-// Logic helpers from previous versions...
-function canSee(start, end) {
-    const [x1, y1] = start.split(',').map(Number);
-    const [x2, y2] = end.split(',').map(Number);
-    if (Math.abs(x1 - x2) > 2 || Math.abs(y1 - y2) > 2) return false;
-    return isPathClear(x1, y1, x2, y2) || (Math.abs(x1-x2) === 1 && Math.abs(y1-y2) === 1);
+function toAlgebraic(coord) {
+    const [x, y] = coord.split(',').map(Number);
+    return ['a','b','c','d','e','f','g','h'][x] + (8 - y);
+}
+
+function getAttackSquares(from) {
+    const p = pieces[from];
+    const [x1, y1] = from.split(',').map(Number);
+    let attacks = [];
+    const pushIfEnemy = (x, y) => {
+        const key = `${x},${y}`;
+        if (pieces[key] && pieces[key].color !== p.color) attacks.push(key);
+    };
+
+    if (p.type === "pawn") {
+        const d = p.color === "white" ? -1 : 1;
+        [[x1 - 1, y1 + d], [x1 + 1, y1 + d]].forEach(([x, y]) => {
+            if (x >= 0 && x < 8 && y >= 0 && y < 8) pushIfEnemy(x, y);
+        });
+        return attacks;
+    }
+
+    if (p.type === "knight") {
+        [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(([dx, dy]) => {
+            const x = x1+dx, y = y1+dy;
+            if (x>=0 && x<8 && y>=0 && y<8) pushIfEnemy(x, y);
+        });
+        return attacks;
+    }
+
+    const dirs = [];
+    if (["rook", "queen", "king"].includes(p.type)) dirs.push([1,0],[-1,0],[0,1],[0,-1]);
+    if (["bishop", "queen", "king"].includes(p.type)) dirs.push([1,1],[1,-1],[-1,1],[-1,-1]);
+
+    for (const [dx, dy] of dirs) {
+        let x = x1 + dx, y = y1 + dy;
+        while (x >= 0 && x < 8 && y >= 0 && y < 8) {
+            const key = `${x},${y}`;
+            if (pieces[key]) {
+                if (pieces[key].color !== p.color) attacks.push(key);
+                break; 
+            }
+            if (p.type === "king") break;
+            x += dx; y += dy;
+        }
+    }
+    return attacks;
 }
 
 function isValidMove(p, from, to) {
     if (!p) return false;
-    const [x1, y1] = from.split(',').map(Number);
-    const [x2, y2] = to.split(',').map(Number);
-    const dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
-    if (x1 === x2 && y1 === y2 || pieces[to]?.color === p.color) return false;
+    const [x1, y1] = from.split(',').map(Number), [x2, y2] = to.split(',').map(Number);
+    const dx = Math.abs(x2-x1), dy = Math.abs(y2-y1);
+    if (x1===x2 && y1===y2 || pieces[to]?.color === p.color) return false;
     switch(p.type) {
-        case 'pawn': 
+        case 'pawn':
             const d = p.color === 'white' ? -1 : 1;
-            if (x1 === x2 && y2 - y1 === d && !pieces[to]) return true;
-            if (x1 === x2 && y1 === (p.color === 'white' ? 6 : 1) && y2 - y1 === 2*d && !pieces[`${x1},${y1+d}`] && !pieces[to]) return true;
-            if (dx === 1 && y2 - y1 === d && pieces[to]) return true;
+            if (x1===x2 && y2-y1===d && !pieces[to]) return true;
+            if (x1===x2 && y1===(p.color==='white'?6:1) && y2-y1===2*d && !pieces[`${x1},${y1+d}`] && !pieces[to]) return true;
+            if (dx===1 && y2-y1===d && pieces[to]) return true;
             return false;
-        case 'rook': return (x1 === x2 || y1 === y2) && isPathClear(x1, y1, x2, y2);
-        case 'bishop': return dx === dy && isPathClear(x1, y1, x2, y2);
-        case 'queen': return (x1 === x2 || y1 === y2 || dx === dy) && isPathClear(x1, y1, x2, y2);
-        case 'knight': return (dx === 2 && dy === 1) || (dx === 1 && dy === 2);
-        case 'king': return dx <= 1 && dy <= 1;
+        case 'rook': return (x1===x2 || y1===y2) && isPathClear(x1,y1,x2,y2);
+        case 'bishop': return dx===dy && isPathClear(x1,y1,x2,y2);
+        case 'queen': return (x1===x2 || y1===y2 || dx===dy) && isPathClear(x1,y1,x2,y2);
+        case 'knight': return (dx===2 && dy===1) || (dx===1 && dy===2);
+        case 'king': return dx<=1 && dy<=1;
     }
 }
 
-function isPathClear(x1, y1, x2, y2) {
-    const dx = Math.sign(x2 - x1), dy = Math.sign(y2 - y1);
-    let cx = x1 + dx, cy = y1 + dy;
-    while (cx !== x2 || cy !== y2) {
+function isPathClear(x1,y1,x2,y2) {
+    const dx = Math.sign(x2-x1), dy = Math.sign(y2-y1);
+    let cx = x1+dx, cy = y1+dy;
+    while(cx!==x2 || cy!==y2) {
         if (pieces[`${cx},${cy}`]) return false;
-        cx += dx; cy += dy;
+        cx+=dx; cy+=dy;
     }
     return true;
+}
+
+function getValidMoves(coord) {
+    let list = [];
+    for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+            if (isValidMove(pieces[coord], coord, `${x},${y}`)) list.push(`${x},${y}`);
+        }
+    }
+    return list;
 }
 
 function getImg(p) {
