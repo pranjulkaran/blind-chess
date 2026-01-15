@@ -55,7 +55,9 @@ function render() {
         playable.forEach(m => {
             const t = document.getElementById(`tile-${m.replace(',','-')}`);
             t.classList.add('valid-move');
-            if (pieces[m] && pieces[m].color !== turn) t.classList.add('has-piece');
+            if (pieces[m] && pieces[m].color !== turn) {
+                t.classList.add('has-piece'); // triggers neon red piece glow
+            }
         });
     }
 }
@@ -64,8 +66,7 @@ function handleClick(x, y) {
     const coord = `${x},${y}`;
     if (phase === 'LOCK') {
         if (pieces[coord]?.color === turn) {
-            const moves = getValidMoves(coord);
-            if (moves.length === 0) return;
+            if (getValidMoves(coord).length === 0) return;
             selectedTile = coord;
             phase = 'MOVE';
             revealedSquares = new Set(getAttackSquares(coord));
@@ -75,12 +76,9 @@ function handleClick(x, y) {
         if (isValidMove(active, selectedTile, coord)) {
             const cap = pieces[coord] ? pieces[coord].type : null;
             if (cap === 'king') { alert(turn.toUpperCase() + " WINS!"); location.reload(); }
-            
             updateNotationGrid(active, selectedTile, coord, cap);
-            
             pieces[coord] = active;
             delete pieces[selectedTile];
-            
             turn = turn === 'white' ? 'black' : 'white';
             document.body.setAttribute('data-turn', turn);
             phase = 'LOCK'; selectedTile = null;
@@ -97,20 +95,12 @@ function handleClick(x, y) {
 
 function updateNotationGrid(p, from, to, cap) {
     const notation = `${toAlgebraic(from)}→${toAlgebraic(to)}${cap ? 'x' : ''}`;
-    
     if (turn === 'white') {
-        const num = document.createElement('div');
-        num.className = 'move-num';
-        num.innerText = moveCount;
-        const whiteCell = document.createElement('div');
-        whiteCell.className = 'move-cell';
+        const num = document.createElement('div'); num.className = 'move-num'; num.innerText = moveCount;
+        const whiteCell = document.createElement('div'); whiteCell.className = 'move-cell';
         whiteCell.innerHTML = `<span class="white-private">${notation}</span><span class="white-mask mask">Moved</span>`;
-        const blackCell = document.createElement('div');
-        blackCell.id = `black-move-${moveCount}`;
-        blackCell.className = 'move-cell';
-        notationGrid.appendChild(num);
-        notationGrid.appendChild(whiteCell);
-        notationGrid.appendChild(blackCell);
+        const blackCell = document.createElement('div'); blackCell.id = `black-move-${moveCount}`; blackCell.className = 'move-cell';
+        notationGrid.appendChild(num); notationGrid.appendChild(whiteCell); notationGrid.appendChild(blackCell);
     } else {
         const blackCell = document.getElementById(`black-move-${moveCount}`);
         blackCell.innerHTML = `<span class="black-private">${notation}</span><span class="black-mask mask">Moved</span>`;
@@ -131,7 +121,6 @@ function getAttackSquares(from) {
         const key = `${x},${y}`;
         if (pieces[key] && pieces[key].color !== p.color) attacks.push(key);
     };
-
     if (p.type === "pawn") {
         const d = p.color === "white" ? -1 : 1;
         [[x1 - 1, y1 + d], [x1 + 1, y1 + d]].forEach(([x, y]) => {
@@ -139,7 +128,6 @@ function getAttackSquares(from) {
         });
         return attacks;
     }
-
     if (p.type === "knight") {
         [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(([dx, dy]) => {
             const x = x1+dx, y = y1+dy;
@@ -147,11 +135,9 @@ function getAttackSquares(from) {
         });
         return attacks;
     }
-
     const dirs = [];
     if (["rook", "queen", "king"].includes(p.type)) dirs.push([1,0],[-1,0],[0,1],[0,-1]);
     if (["bishop", "queen", "king"].includes(p.type)) dirs.push([1,1],[1,-1],[-1,1],[-1,-1]);
-
     for (const [dx, dy] of dirs) {
         let x = x1 + dx, y = y1 + dy;
         while (x >= 0 && x < 8 && y >= 0 && y < 8) {
