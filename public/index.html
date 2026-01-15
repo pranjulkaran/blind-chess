@@ -3,22 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tactical Stealth Chess</title>
+    <title>Tactical Stealth Chess v0.2</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body data-turn="white">
+
+    <div id="privacy-overlay" class="hidden">
+        <div class="overlay-content">
+            <h2 id="next-player-name">BLACK'S TURN</h2>
+            <p>Pass the device to your opponent</p>
+            <button onclick="revealBoard()">START TURN</button>
+        </div>
+    </div>
 
     <div id="main-layout">
         <div id="game-container">
             <div id="status-bar">
                 <span id="turn-indicator">WHITE'S TURN</span>
-                <span id="phase-indicator">PHASE: LOCK</span>
+                <span id="phase-indicator">STATUS: SELECT PIECE</span>
             </div>
             
             <div id="board-wrapper">
-                <div class="ranks"><div>8</div><div>7</div><div>6</div><div>5</div><div>4</div><div>3</div><div>2</div><div>1</div></div>
+                <div class="ranks">
+                    <div>8</div><div>7</div><div>6</div><div>5</div><div>4</div><div>3</div><div>2</div><div>1</div>
+                </div>
                 <div id="board"></div>
-                <div class="files"><div>a</div><div>b</div><div>c</div><div>d</div><div>e</div><div>f</div><div>g</div><div>h</div></div>
+                <div class="files">
+                    <div>a</div><div>b</div><div>c</div><div>d</div><div>e</div><div>f</div><div>g</div><div>h</div>
+                </div>
             </div>
         </div>
 

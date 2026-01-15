@@ -2,10 +2,11 @@ const boardEl = document.getElementById('board');
 const notationGrid = document.getElementById('notation-grid');
 const turnText = document.getElementById('turn-indicator');
 const phaseText = document.getElementById('phase-indicator');
+const overlay = document.getElementById('privacy-overlay');
+const nextPlayerName = document.getElementById('next-player-name');
 
 let turn = 'white';
-let phase = 'LOCK'; 
-let selectedTile = null;
+let selectedTile = null; 
 let revealedSquares = new Set();
 let moveCount = 1;
 
@@ -55,46 +56,58 @@ function render() {
         playable.forEach(m => {
             const t = document.getElementById(`tile-${m.replace(',','-')}`);
             t.classList.add('valid-move');
-            if (pieces[m] && pieces[m].color !== turn) {
-                t.classList.add('has-piece'); // triggers neon red piece glow
-            }
+            if (pieces[m] && pieces[m].color !== turn) t.classList.add('has-piece');
         });
     }
 }
 
 function handleClick(x, y) {
     const coord = `${x},${y}`;
-    if (phase === 'LOCK') {
+    
+    if (!selectedTile) {
         if (pieces[coord]?.color === turn) {
             if (getValidMoves(coord).length === 0) return;
             selectedTile = coord;
-            phase = 'MOVE';
             revealedSquares = new Set(getAttackSquares(coord));
+            phaseText.innerText = "STATUS: PIECE COMMITTED";
+            render();
         }
     } else {
         const active = pieces[selectedTile];
         if (isValidMove(active, selectedTile, coord)) {
-            const cap = pieces[coord] ? pieces[coord].type : null;
-            if (cap === 'king') { alert(turn.toUpperCase() + " WINS!"); location.reload(); }
-            updateNotationGrid(active, selectedTile, coord, cap);
+            const captured = pieces[coord];
+            if (captured?.type === 'king') { 
+                alert(turn.toUpperCase() + " WINS!"); 
+                location.reload(); 
+            }
+            updateNotationGrid(active, selectedTile, coord, captured);
             pieces[coord] = active;
             delete pieces[selectedTile];
-            turn = turn === 'white' ? 'black' : 'white';
-            document.body.setAttribute('data-turn', turn);
-            phase = 'LOCK'; selectedTile = null;
-            revealedSquares.clear();
-        } else if (pieces[coord]?.color === turn) {
-            selectedTile = coord;
-            revealedSquares = new Set(getAttackSquares(coord));
+            startTurnTransition();
         }
     }
+}
+
+function startTurnTransition() {
+    turn = turn === 'white' ? 'black' : 'white';
+    nextPlayerName.innerText = `${turn.toUpperCase()}'S TURN`;
+    overlay.classList.remove('hidden');
+    selectedTile = null;
+    revealedSquares.clear();
+}
+
+function revealBoard() {
+    overlay.classList.add('hidden');
+    document.body.setAttribute('data-turn', turn);
     turnText.innerText = `${turn.toUpperCase()}'S TURN`;
-    phaseText.innerText = `PHASE: ${phase}`;
+    phaseText.innerText = "STATUS: SELECT PIECE";
     render();
 }
 
 function updateNotationGrid(p, from, to, cap) {
-    const notation = `${toAlgebraic(from)}→${toAlgebraic(to)}${cap ? 'x' : ''}`;
+    const pChar = { 'pawn': '', 'rook': 'R', 'knight': 'N', 'bishop': 'B', 'queen': 'Q', 'king': 'K' }[p.type];
+    const notation = `${pChar}${cap ? 'x' : ''}${toAlgebraic(to)}`;
+    
     if (turn === 'white') {
         const num = document.createElement('div'); num.className = 'move-num'; num.innerText = moveCount;
         const whiteCell = document.createElement('div'); whiteCell.className = 'move-cell';
@@ -113,46 +126,7 @@ function toAlgebraic(coord) {
     return ['a','b','c','d','e','f','g','h'][x] + (8 - y);
 }
 
-function getAttackSquares(from) {
-    const p = pieces[from];
-    const [x1, y1] = from.split(',').map(Number);
-    let attacks = [];
-    const pushIfEnemy = (x, y) => {
-        const key = `${x},${y}`;
-        if (pieces[key] && pieces[key].color !== p.color) attacks.push(key);
-    };
-    if (p.type === "pawn") {
-        const d = p.color === "white" ? -1 : 1;
-        [[x1 - 1, y1 + d], [x1 + 1, y1 + d]].forEach(([x, y]) => {
-            if (x >= 0 && x < 8 && y >= 0 && y < 8) pushIfEnemy(x, y);
-        });
-        return attacks;
-    }
-    if (p.type === "knight") {
-        [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(([dx, dy]) => {
-            const x = x1+dx, y = y1+dy;
-            if (x>=0 && x<8 && y>=0 && y<8) pushIfEnemy(x, y);
-        });
-        return attacks;
-    }
-    const dirs = [];
-    if (["rook", "queen", "king"].includes(p.type)) dirs.push([1,0],[-1,0],[0,1],[0,-1]);
-    if (["bishop", "queen", "king"].includes(p.type)) dirs.push([1,1],[1,-1],[-1,1],[-1,-1]);
-    for (const [dx, dy] of dirs) {
-        let x = x1 + dx, y = y1 + dy;
-        while (x >= 0 && x < 8 && y >= 0 && y < 8) {
-            const key = `${x},${y}`;
-            if (pieces[key]) {
-                if (pieces[key].color !== p.color) attacks.push(key);
-                break; 
-            }
-            if (p.type === "king") break;
-            x += dx; y += dy;
-        }
-    }
-    return attacks;
-}
-
+// Full logic rules for chess movement
 function isValidMove(p, from, to) {
     if (!p) return false;
     const [x1, y1] = from.split(',').map(Number), [x2, y2] = to.split(',').map(Number);
@@ -191,6 +165,47 @@ function getValidMoves(coord) {
         }
     }
     return list;
+}
+
+function getAttackSquares(from) {
+    const p = pieces[from];
+    const [x1, y1] = from.split(',').map(Number);
+    let attacks = [];
+    const pushIfEnemy = (x, y) => {
+        const key = `${x},${y}`;
+        if (pieces[key] && pieces[key].color !== p.color) attacks.push(key);
+    };
+    if (p.type === "pawn") {
+        const d = p.color === "white" ? -1 : 1;
+        [[x1-1, y1+d], [x1+1, y1+d]].forEach(([x, y]) => {
+            if (x >= 0 && x < 8 && y >= 0 && y < 8) pushIfEnemy(x, y);
+        });
+        return attacks;
+    }
+    if (p.type === "knight") {
+        [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(([dx, dy]) => {
+            const x = x1+dx, y = y1+dy;
+            if (x>=0 && x<8 && y>=0 && y<8) pushIfEnemy(x, y);
+        });
+        return attacks;
+    }
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+    const activeDirs = (p.type === "rook") ? dirs.slice(0,4) : (p.type === "bishop") ? dirs.slice(4) : dirs;
+    if (p.type === "pawn") return attacks;
+
+    for (const [dx, dy] of activeDirs) {
+        let x = x1 + dx, y = y1 + dy;
+        while (x >= 0 && x < 8 && y >= 0 && y < 8) {
+            const key = `${x},${y}`;
+            if (pieces[key]) {
+                if (pieces[key].color !== p.color) attacks.push(key);
+                break; 
+            }
+            if (p.type === "king" || p.type === "knight") break;
+            x += dx; y += dy;
+        }
+    }
+    return attacks;
 }
 
 function getImg(p) {
