@@ -3,10 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tactical Stealth Chess v0.2</title>
+    <title>Tactical Stealth Chess v0.5</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body data-turn="white">
+
+    <div id="setup-overlay">
+        <div class="overlay-content">
+            <h1 style="color: #00d2ff; letter-spacing: 4px;">STEALTH CHESS</h1>
+            <p>Select Timing Protocol:</p>
+            <div class="setup-options">
+                <button onclick="startGame('fixed')">FIXED (60s Turns)</button>
+                <button onclick="startGame('dynamic')">DYNAMIC (Scales with Captures)</button>
+                <button onclick="startGame('blitz')">BLITZ (15s Rapid)</button>
+            </div>
+        </div>
+    </div>
 
     <div id="privacy-overlay" class="hidden">
         <div class="overlay-content">
@@ -21,6 +33,7 @@
             <div id="status-bar">
                 <span id="turn-indicator">WHITE'S TURN</span>
                 <span id="phase-indicator">STATUS: SELECT PIECE</span>
+                <span id="timer-display">TIME: --</span>
             </div>
             
             <div id="board-wrapper">
@@ -36,14 +49,21 @@
 
         <div id="sidebar">
             <div id="move-history">
-                <div class="history-header">Move History</div>
+                <div class="history-header">Move History (Click to View)</div>
                 <div id="notation-grid">
                     <div class="grid-header">#</div>
                     <div class="grid-header">White</div>
                     <div class="grid-header">Black</div>
                 </div>
             </div>
-            <button id="reset-btn" onclick="location.reload()">New Game</button>
+            
+            <div id="history-controls">
+                <button onclick="navigateHistory(-1)">PREV</button>
+                <span id="history-label">LIVE</span>
+                <button onclick="navigateHistory(1)">NEXT</button>
+            </div>
+
+            <button id="reset-btn" onclick="location.reload()">Reset Game</button>
         </div>
     </div>
 
