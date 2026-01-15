@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tactical Stealth Chess v0.5</title>
+    <title>Tactical Stealth Chess v0.7</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body data-turn="white">
@@ -13,9 +13,9 @@
             <h1 style="color: #00d2ff; letter-spacing: 4px;">STEALTH CHESS</h1>
             <p>Select Timing Protocol:</p>
             <div class="setup-options">
-                <button onclick="startGame('fixed')">FIXED (60s Turns)</button>
-                <button onclick="startGame('dynamic')">DYNAMIC (Scales with Captures)</button>
-                <button onclick="startGame('blitz')">BLITZ (15s Rapid)</button>
+                <button onclick="startGame('fixed')">FIXED (60s)</button>
+                <button onclick="startGame('dynamic')">DYNAMIC (Scales)</button>
+                <button onclick="startGame('blitz')">BLITZ (15s)</button>
             </div>
         </div>
     </div>
@@ -28,41 +28,47 @@
         </div>
     </div>
 
+    <div id="victory-overlay" class="hidden">
+        <div class="overlay-content">
+            <h1 id="winner-text">WHITE WINS</h1>
+            <p id="match-stats">Moves: 0 | Time: 0:00</p>
+            <div class="setup-options">
+                <button onclick="startReplay()">WATCH REPLAY</button>
+                <button onclick="location.reload()">NEW GAME</button>
+            </div>
+        </div>
+    </div>
+
     <div id="main-layout">
         <div id="game-container">
             <div id="status-bar">
                 <span id="turn-indicator">WHITE'S TURN</span>
-                <span id="phase-indicator">STATUS: SELECT PIECE</span>
                 <span id="timer-display">TIME: --</span>
             </div>
             
             <div id="board-wrapper">
-                <div class="ranks">
-                    <div>8</div><div>7</div><div>6</div><div>5</div><div>4</div><div>3</div><div>2</div><div>1</div>
-                </div>
+                <div class="ranks"><div>8</div><div>7</div><div>6</div><div>5</div><div>4</div><div>3</div><div>2</div><div>1</div></div>
                 <div id="board"></div>
-                <div class="files">
-                    <div>a</div><div>b</div><div>c</div><div>d</div><div>e</div><div>f</div><div>g</div><div>h</div>
-                </div>
+                <div class="files"><div>a</div><div>b</div><div>c</div><div>d</div><div>e</div><div>f</div><div>g</div><div>h</div></div>
             </div>
         </div>
 
         <div id="sidebar">
+            <div id="graveyard-container">
+                <div class="history-header">Graveyard</div>
+                <div id="graveyard"></div>
+            </div>
             <div id="move-history">
-                <div class="history-header">Move History (Click to View)</div>
+                <div class="history-header">History</div>
                 <div id="notation-grid">
-                    <div class="grid-header">#</div>
-                    <div class="grid-header">White</div>
-                    <div class="grid-header">Black</div>
+                    <div class="grid-header">#</div><div class="grid-header">W</div><div class="grid-header">B</div>
                 </div>
             </div>
-            
             <div id="history-controls">
                 <button onclick="navigateHistory(-1)">PREV</button>
                 <span id="history-label">LIVE</span>
                 <button onclick="navigateHistory(1)">NEXT</button>
             </div>
-
             <button id="reset-btn" onclick="location.reload()">Reset Game</button>
         </div>
     </div>
