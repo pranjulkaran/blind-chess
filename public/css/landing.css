@@ -1,0 +1,64 @@
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #262421;
+    color: #fff;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+}
+
+.content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 100px;
+}
+
+.chessboard-container img {
+    width: 400px;
+    height: 400px;
+}
+
+.text-container {
+    text-align: left;
+}
+
+.text-container h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin: 0 0 10px;
+}
+
+.text-container h2 {
+    font-size: 24px;
+    font-weight: 400;
+    margin: 0 0 30px;
+    color: #a0a0a0;
+}
+
+.button {
+    display: inline-block;
+    background-color: #81b64c;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 600;
+    padding: 15px 40px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #95d05a;
+}

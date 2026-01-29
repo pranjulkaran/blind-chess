@@ -1,40 +1,29 @@
 import crypto from "crypto";
 
-const sessions=new Map();
-// sessionId -> {id, userId, ws, lastSeen}
+const sessions = new Map();
 
-export function createSession(ws){
-  const id=crypto.randomUUID();
-
-  const s={
-    id,
-    userId:crypto.randomUUID(),
-    ws,
-    lastSeen:Date.now()
-  };
-
-  sessions.set(id,s);
-  return s;
+export function createSession(ws) {
+    const session = {
+        id: crypto.randomUUID(),
+        ws,
+    };
+    sessions.set(session.id, session);
+    return session;
 }
 
-export function getSession(id){
-  return sessions.get(id);
+export function getSession(sessionId) {
+    return sessions.get(sessionId);
 }
 
-export function attachSocket(sessionId,ws){
-  const s=sessions.get(sessionId);
-  if(!s) return null;
-
-  s.ws=ws;
-  s.lastSeen=Date.now();
-  return s;
-}
-
-export function detachSocket(ws){
-  for(const s of sessions.values()){
-    if(s.ws===ws){
-      s.ws=null;
-      s.lastSeen=Date.now();
+export function getSessionByWs(ws) {
+    for (const session of sessions.values()) {
+        if (session.ws === ws) {
+            return session;
+        }
     }
-  }
+    return null;
+}
+
+export function removeSession(sessionId) {
+    sessions.delete(sessionId);
 }

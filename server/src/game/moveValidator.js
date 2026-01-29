@@ -1,37 +1,30 @@
-import { pawnRule } from "./rules/pawn.js";
-import { rookRule } from "./rules/rook.js";
-import { knightRule } from "./rules/knight.js";
-import { bishopRule } from "./rules/bishop.js";
-import { queenRule } from "./rules/queen.js";
-import { kingRule } from "./rules/king.js";
+import { getSquarePath } from '../utils/path.js';
 
-const ruleMap={
-  pawn:pawnRule,
-  rook:rookRule,
-  knight:knightRule,
-  bishop:bishopRule,
-  queen:queenRule,
-  king:kingRule
-};
+export function validateMove(chess, playerColor, clientMove, revealedPieces) {
+    if (chess.turn() !== playerColor.charAt(0)) {
+        return "Not your turn.";
+    }
 
-export function validateMove(game,move,sessionId){
+    const possibleMoves = chess.moves({ square: clientMove.from, verbose: true });
+    const intendedMove = possibleMoves.find(m => m.to === clientMove.to);
 
-  if(game.currentPlayerSession()!==sessionId)
-    return {ok:false,reason:"NOT_YOUR_TURN"};
+    if (!intendedMove) {
+        return "Illegal move.";
+    }
 
-  const piece=game.board[move.from];
-  if(!piece) return {ok:false};
+    // For non-knight moves, check for blocking pieces between from and to.
+    const piece = chess.get(clientMove.from);
+    if (piece.type !== 'n') {
+        const path = getSquarePath(clientMove.from, clientMove.to);
+        for (const square of path) {
+            const pieceOnPath = chess.get(square);
+            if (pieceOnPath && pieceOnPath.color !== playerColor.charAt(0) && !revealedPieces[playerColor].has(square)) {
+                return "Move blocked by a hidden piece.";
+            }
+        }
+    }
 
-  if(piece.color!==game.turn)
-    return {ok:false,reason:"WRONG_COLOR"};
+    clientMove.san = intendedMove.san;
 
-  const target=game.board[move.to];
-  if(target && target.color===piece.color)
-    return {ok:false,reason:"OWN_PIECE"};
-
-  const rule=ruleMap[piece.type];
-  if(!rule(game,move,piece))
-    return {ok:false,reason:"ILLEGAL"};
-
-  return {ok:true};
+    return null; // No error
 }

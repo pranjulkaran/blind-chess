@@ -1,32 +1,30 @@
-import crypto from "crypto";
 import { createRoom } from "./lobbyManager.js";
 
-const queue=[];
+const queue = new Set();
 
-export function joinQueue(sessionId){
+export function joinQueue(sessionId) {
+    if (queue.has(sessionId)) {
+        return null; // Already in queue
+    }
 
-  if(queue.includes(sessionId))
-    return null;
+    queue.add(sessionId);
 
-  queue.push(sessionId);
+    if (queue.size >= 2) {
+        const [player1, player2] = Array.from(queue).slice(0, 2);
+        queue.delete(player1);
+        queue.delete(player2);
 
-  if(queue.length>=2){
-    const a=queue.shift();
-    const b=queue.shift();
+        const roomId = createRoom(player1);
+        const players = Math.random() < 0.5 
+            ? { white: player1, black: player2 } 
+            : { black: player1, white: player2 };
 
-    const roomId=createRoom(a);
+        return { matched: true, roomId, players };
+    }
 
-    return {
-      matched:true,
-      roomId,
-      players:[a,b]
-    };
-  }
-
-  return {matched:false};
+    return null; // Not enough players to match
 }
 
-export function leaveQueue(sessionId){
-  const i=queue.indexOf(sessionId);
-  if(i!==-1) queue.splice(i,1);
+export function leaveQueue(sessionId) {
+    queue.delete(sessionId);
 }

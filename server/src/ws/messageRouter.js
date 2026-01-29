@@ -1,80 +1,98 @@
-import {
-  createSession,
-  attachSocket
-} from "../session/sessionManager.js";
+import { getSessionByWs, getSession } from "../session/sessionManager.js";
+import { joinQueue, leaveQueue } from "../lobby/matchmakingManager.js";
+import { createRoom, joinRoom, getRoom } from "../lobby/lobbyManager.js";
+import GameManager from "../game/gameManager.js";
+import { isRateLimited } from "./rateLimiter.js";
 
-import {
-  createRoom,
-  joinRoom
-} from "../lobby/lobbyManager.js";
+const gameManagers = new Map();
 
-import {
-  joinQueue,
-  leaveQueue
-} from "../lobby/matchmakingManager.js";
-
-import {
-  maybeStartGame,
-  handleMove
-} from "../game/gameManager.js";
-
-const socketSession=new Map();
-
-export function routeMessage(ws,msg){
-
-  switch(msg.type){
-
-    case "HELLO":{
-      const s=createSession(ws);
-      socketSession.set(ws,s);
-
-      ws.send(JSON.stringify({
-        type:"SESSION",
-        payload:{sessionId:s.id}
-      }));
-      break;
+function handleMatchmaking(session, msg) {
+    if (isRateLimited(session.id)) {
+        return session.ws.send(JSON.stringify({ type: "ERROR", payload: { message: "Rate limit exceeded." } }));
     }
 
-    case "QUEUE":{
-      const s=socketSession.get(ws);
+    switch (msg.type) {
+        case "QUEUE":
+            const match = joinQueue(session.id);
+            if (!match) {
+                session.ws.send(JSON.stringify({ type: "QUEUED" }));
+                return;
+            }
+            
+            const { roomId, players } = match;
+            const whiteSession = getSession(players.white);
+            const blackSession = getSession(players.black);
 
-      const res=joinQueue(s.id);
+            if (!whiteSession || !blackSession) {
+                console.error("Could not find sessions for matched players.");
+                // Logic to requeue or notify players might be needed here
+                return;
+            }
 
-      if(res?.matched){
-        joinRoom(res.roomId,res.players[1]);
+            const room = createRoom(roomId);
+            joinRoom(room.id, whiteSession.id);
+            joinRoom(room.id, blackSession.id);
 
-        ws.send(JSON.stringify({
-          type:"MATCH_FOUND",
-          payload:{roomId:res.roomId}
-        }));
-      }else{
-        ws.send(JSON.stringify({
-          type:"QUEUED"
-        }));
-      }
-      break;
+            const onGameEnd = () => {
+                gameManagers.delete(roomId);
+                // Optionally, perform more cleanup like closing WebSockets or notifying about game end.
+                console.log(`Game in room ${roomId} has ended.`);
+            };
+
+            const playersWs = { white: whiteSession.ws, black: blackSession.ws };
+            const gameManager = new GameManager(playersWs, onGameEnd);
+            gameManagers.set(roomId, gameManager);
+
+            whiteSession.ws.send(JSON.stringify({ type: "MATCH_FOUND", payload: { roomId, color: 'white' } }));
+            blackSession.ws.send(JSON.stringify({ type: "MATCH_FOUND", payload: { roomId, color: 'black' } }));
+            break;
+        
+        case "LEAVE_QUEUE":
+            leaveQueue(session.id);
+            break;
+    }
+}
+
+function handleGameAction(session, msg) {
+    if (isRateLimited(session.id)) {
+        return session.ws.send(JSON.stringify({ type: "ERROR", payload: { message: "Rate limit exceeded." } }));
     }
 
-    case "LEAVE_QUEUE":{
-      const s=socketSession.get(ws);
-      leaveQueue(s.id);
-      break;
+    const { roomId } = msg.payload;
+    if (!roomId) {
+        return session.ws.send(JSON.stringify({ type: "ERROR", payload: { message: "Missing roomId." } }));
+    }
+    
+    const gameManager = gameManagers.get(roomId);
+    if (!gameManager) {
+        return session.ws.send(JSON.stringify({ type: "ERROR", payload: { message: "Game not found." } }));
     }
 
-    case "MOVE":{
-      const s=socketSession.get(ws);
-
-      const r=handleMove(
-        msg.payload.roomId,
-        s.id,
-        msg.payload.move
-      );
-
-      ws.send(JSON.stringify({
-        type:"MOVE_RESULT",
-        payload:r
-      }));
-      break;
+    switch (msg.type) {
+        case "MOVE":
+            gameManager.handleMove(session.ws, msg.payload.move);
+            break;
+        // Other game actions like resign, draw offer can be handled here
     }
-  }
+}
+
+export function routeMessage(ws, msg) {
+    const session = getSessionByWs(ws);
+    if (!session) {
+        ws.send(JSON.stringify({ type: "ERROR", payload: { message: "No session. Please reconnect." } }));
+        return;
+    }
+
+    switch(msg.type) {
+        case "QUEUE":
+        case "LEAVE_QUEUE":
+            handleMatchmaking(session, msg);
+            break;
+        case "MOVE":
+            handleGameAction(session, msg);
+            break;
+        default:
+            session.ws.send(JSON.stringify({ type: "ERROR", payload: { message: `Unknown message type: ${msg.type}` } }));
+            break;
+    }
 }
