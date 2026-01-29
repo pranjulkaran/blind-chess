@@ -1,15 +1,12 @@
 {
   "name": "blind-chess",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server/server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "chessground": "^9.2.1"
+    "ws": "^8.17.0"
   }
 }

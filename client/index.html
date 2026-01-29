@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2 id="status">Connecting...</h2>
+<div id="board"></div>
+
+<style>
+#board{
+display:grid;
+grid-template-columns:repeat(8,60px);
+width:480px;
+}
+
+.tile{
+width:60px;height:60px;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.dark{background:#769656;}
+.light{background:#EEEED2;}
+.piece{width:48px;height:48px;}
+</style>
+
+<script>
+let ws=new WebSocket("ws://"+location.host);
+
+let board={}, myColor=null, selected=null;
+const boardEl=document.getElementById("board");
+const statusEl=document.getElementById("status");
+const files="abcdefgh";
+
+function render(){
+  boardEl.innerHTML="";
+  for(let r=8;r>=1;r--){
+    for(let i=0;i<8;i++){
+      const sq=files[i]+r;
+      const t=document.createElement("div");
+      t.className="tile "+((i+r)%2?"dark":"light");
+      t.dataset.sq=sq;
+
+      const p=board[sq];
+      if(p){
+        const img=document.createElement("img");
+        img.src=`/assets/pieces/${p.color}-${p.type}.svg`;
+        img.className="piece";
+        t.appendChild(img);
+      }
+
+      t.onclick=click;
+      boardEl.appendChild(t);
+    }
+  }
+}
+
+function click(e){
+  const sq=e.currentTarget.dataset.sq;
+
+  if(!selected){ selected=sq; return;}
+
+  ws.send(JSON.stringify({
+    type:"MOVE",
+    from:selected,
+    to:sq
+  }));
+
+  selected=null;
+}
+
+ws.onmessage=e=>{
+  const m=JSON.parse(e.data);
+
+  if(m.type==="WAIT"){
+    statusEl.innerText="Waiting for opponent...";
+  }
+
+  if(m.type==="START"){
+    board=m.board;
+    myColor=m.color;
+    statusEl.innerText="Game started. You are "+myColor;
+    render();
+  }
+
+  if(m.type==="STATE"){
+    board=m.board;
+    statusEl.innerText="Turn: "+m.turn;
+    render();
+  }
+};
+</script>
+
+</body>
+</html>

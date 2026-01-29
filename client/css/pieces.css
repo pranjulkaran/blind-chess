@@ -1,0 +1,29 @@
+.tile{
+  width:60px;
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #333;
+}
+
+.tile:nth-child(odd){
+  background:#eee;
+}
+
+.tile:nth-child(even){
+  background:#777;
+}
+
+.fog{
+  background:#111 !important;
+}
+
+.piece{
+  width:48px;
+  height:48px;
+}
+
+.selected{
+  outline:3px solid yellow;
+}
